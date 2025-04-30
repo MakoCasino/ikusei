@@ -39,14 +39,14 @@ function getValue(hand) {
       total += 11;
       aceCount++;
     } else if (['K', 'Q', 'J'].includes(card.value)) {
-      total += 10;
+      total += 10;  // K, Q, J は 10 として計算
     } else {
       total += parseInt(card.value);
     }
   }
 
   while (total > 21 && aceCount > 0) {
-    total -= 10;
+    total -= 10; // Aが11の場合、21を超えたら1として扱う
     aceCount--;
   }
 
@@ -63,12 +63,20 @@ function displayCards(container, hand) {
   }
 }
 
-function endGame(message, winAmount) {
-  resultEl.textContent = message;
-  currentChips += winAmount;
-  winInfoEl.textContent = `勝ちマコ: ${winAmount}マコ`;
+function endGame(message, winAmount, isPush = false) {
+  if (isPush) {
+    // 引き分け時はベット額を戻す
+    currentChips += betAmount;
+  } else {
+    currentChips += winAmount; // 勝った場合はベット額の2倍を加算
+  }
+
   chipCountEl.textContent = `所持マコ: ${currentChips}マコ`;
+  winInfoEl.textContent = `勝ちマコ: ${winAmount}マコ`;
+  resultEl.textContent = message;
+
   updateDoc(doc(db, "users", userId), { chips: currentChips });
+
   hitBtn.disabled = true;
   standBtn.disabled = true;
   returnBtn.disabled = false;
@@ -79,11 +87,11 @@ function checkWinner() {
   const dealerScore = getValue(dealerHand);
 
   if (dealerScore > 21 || playerScore > dealerScore) {
-    endGame("あなたの勝ち！", betAmount);
+    endGame("あなたの勝ち！", betAmount * 2); // 2倍の勝ち
   } else if (playerScore === dealerScore) {
-    endGame("引き分け！", 0);
+    endGame("引き分け！", 0, true); // 引き分け時はベット額を戻す
   } else {
-    endGame("負けました…", -betAmount);
+    endGame("負けました…", 0); // すでにマイナスの処理はしているので、追加なし
   }
 }
 
@@ -106,6 +114,8 @@ startBtn.addEventListener("click", () => {
   }
 
   currentChips -= betAmount;
+  chipCountEl.textContent = `所持マコ: ${currentChips}マコ`; // 現在のチップ数を更新
+
   deck = createDeck();
   playerHand = [deck.pop(), deck.pop()];
   dealerHand = [deck.pop(), deck.pop()];
@@ -127,7 +137,7 @@ hitBtn.addEventListener("click", () => {
   const playerScore = getValue(playerHand);
 
   if (playerScore > 21) {
-    endGame("バースト！負けました。", -betAmount);
+    endGame("バースト！負けました。", -betAmount); // バーストの場合、チップを減らす
   }
 });
 
@@ -137,9 +147,9 @@ standBtn.addEventListener("click", () => {
     dealerHand.push(deck.pop());
     displayCards(dealerCards, dealerHand);
   }
-  checkWinner();
+  checkWinner(); // 勝敗をチェック
 });
 
 returnBtn.addEventListener("click", () => {
-  window.location.href = "育成.html";
+  window.location.href = "育成.html"; // 戻るボタンで育成画面に移動
 });
