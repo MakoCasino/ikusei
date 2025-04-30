@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ブラックジャック - まこと育成ゲーム</title>
+  <script type="module" src="blackjack.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div id="top-bar">
+      <button id="return-btn" disabled>育成状況を見る</button>
+      <div id="chip-count">所持マコ: 0マコ</div>
+    </div>
+
+    <h2>ブラックジャック</h2>
+
+    <div>
+      <label for="bet">ベットするマコ（1マコ単位）:</label>
+      <input type="number" id="bet" min="1" value="1" />
+      <button id="start-btn">ゲーム開始</button>
+    </div>
+
+    <div id="game-area" style="display: none;">
+      <div id="dealer-area">
+        <h3>ディーラー</h3>
+        <div id="dealer-cards" class="card-row"></div>
+      </div>
+
+      <div id="player-area">
+        <h3>あなた</h3>
+        <div id="player-cards" class="card-row"></div>
+        <button id="hit-btn">ヒット</button>
+        <button id="stand-btn">スタンド</button>
+      </div>
+    </div>
+
+    <div id="result"></div>
+    <div id="win-info">勝ちマコ: 0マコ</div>
+  </div>
+</body>
+</html>
