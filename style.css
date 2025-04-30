@@ -54,3 +54,11 @@ a:hover {
   font-size: 0.9rem;
   margin-top: 0.5rem;
 }
+
+.makoto-image {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
