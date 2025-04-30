@@ -80,6 +80,14 @@ function endGame(message, winAmount, isPush = false) {
   hitBtn.disabled = true;
   standBtn.disabled = true;
   returnBtn.disabled = false;
+
+  if (currentChips <= 0) {
+    setTimeout(() => {
+      // 0チップの場合、育成ページに移動してデータリセット
+      resetData();
+      window.location.href = "育成.html";
+    }, 5000); // 5秒後に移動
+  }
 }
 
 function checkWinner() {
@@ -93,6 +101,11 @@ function checkWinner() {
   } else {
     endGame("負けました…", 0); // すでにマイナスの処理はしているので、追加なし
   }
+}
+
+function resetData() {
+  // Firebaseのデータを初期状態にリセット
+  updateDoc(doc(db, "users", userId), { chips: 1000 }); // 1000マコにリセット
 }
 
 onAuthStateChanged(auth, async (user) => {
