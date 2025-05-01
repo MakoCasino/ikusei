@@ -1,6 +1,4 @@
-import { auth, db } from './firebase-init.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js';
-import { doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js';
+// ...（既存のimportはそのまま）
 
 let userId, currentChips = 0, betAmount = 1;
 let deck = [], playerHand = [], dealerHand = [];
@@ -16,9 +14,17 @@ const dealerCards = document.getElementById("dealer-cards");
 const playerCards = document.getElementById("player-cards");
 const gameArea = document.getElementById("game-area");
 const returnBtn = document.getElementById("return-btn");
+const dealerTotalEl = document.getElementById("dealer-total");
+const playerTotalEl = document.getElementById("player-total");
+const growthMsgEl = document.getElementById("growth-message");
 
-const suits = ['♠', '♣', '♥', '♦'];
-const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+let growthNotified = {
+  5001: false,
+  15001: false,
+  50001: false,
+  100001: false,
+  1000000: false,
+};
 
 function createDeck() {
   const newDeck = [];
@@ -39,54 +45,83 @@ function getValue(hand) {
       total += 11;
       aceCount++;
     } else if (['K', 'Q', 'J'].includes(card.value)) {
-      total += 10;  // K, Q, J は 10 として計算
+      total += 10;
     } else {
       total += parseInt(card.value);
     }
   }
 
   while (total > 21 && aceCount > 0) {
-    total -= 10; // Aが11の場合、21を超えたら1として扱う
+    total -= 10;
     aceCount--;
   }
 
   return total;
 }
 
-function displayCards(container, hand) {
+function displayCards(container, hand, isDealer = false) {
   container.innerHTML = '';
-  for (let card of hand) {
+  for (let i = 0; i < hand.length; i++) {
+    const card = hand[i];
     const div = document.createElement("div");
     div.className = "card";
-    div.textContent = `${card.suit}${card.value}`;
+    if (isDealer && i === 1 && hitBtn.disabled === false) {
+      div.textContent = '??';
+    } else {
+      div.textContent = `${card.suit}${card.value}`;
+    }
     container.appendChild(div);
+  }
+
+  if (isDealer) {
+    dealerTotalEl.textContent = hitBtn.disabled ? `ディーラー合計: ${getValue(hand)}` : `ディーラー合計: ?`;
+  } else {
+    playerTotalEl.textContent = `あなたの合計: ${getValue(hand)}`;
+  }
+}
+
+function showGrowthNotification(chips) {
+  const thresholds = [5001, 15001, 50001, 100001, 1000000];
+  for (const threshold of thresholds) {
+    if (chips >= threshold && !growthNotified[threshold]) {
+      growthNotified[threshold] = true;
+      if (threshold === 1000000) {
+        growthMsgEl.textContent = "VIPまことになりました！";
+      } else {
+        growthMsgEl.textContent = "まことが成長しました！";
+      }
+      setTimeout(() => {
+        growthMsgEl.textContent = '';
+      }, 5000);
+    }
   }
 }
 
 function endGame(message, winAmount, isPush = false) {
   if (isPush) {
-    // 引き分け時はベット額を戻す
     currentChips += betAmount;
   } else {
-    currentChips += winAmount; // 勝った場合はベット額の2倍を加算
+    currentChips += winAmount;
   }
 
   chipCountEl.textContent = `所持マコ: ${currentChips}マコ`;
   winInfoEl.textContent = `勝ちマコ: ${winAmount}マコ`;
   resultEl.textContent = message;
-
+  showGrowthNotification(currentChips);
   updateDoc(doc(db, "users", userId), { chips: currentChips });
 
   hitBtn.disabled = true;
   standBtn.disabled = true;
   returnBtn.disabled = false;
 
+  displayCards(dealerCards, dealerHand, true);
+
   if (currentChips <= 0) {
-    setTimeout(() => {
-      // 0チップの場合、育成ページに移動してデータリセット
-      resetData();
+    resultEl.textContent = "0マコになりました。5秒後に育成画面へ移動します。";
+    setTimeout(async () => {
+      await resetData();
       window.location.href = "育成.html";
-    }, 5000); // 5秒後に移動
+    }, 5000);
   }
 }
 
@@ -95,17 +130,16 @@ function checkWinner() {
   const dealerScore = getValue(dealerHand);
 
   if (dealerScore > 21 || playerScore > dealerScore) {
-    endGame("あなたの勝ち！", betAmount * 2); // 2倍の勝ち
+    endGame("あなたの勝ち！", betAmount * 2);
   } else if (playerScore === dealerScore) {
-    endGame("引き分け！", 0, true); // 引き分け時はベット額を戻す
+    endGame("引き分け！", 0, true);
   } else {
-    endGame("負けました…", 0); // すでにマイナスの処理はしているので、追加なし
+    endGame("負けました…", 0);
   }
 }
 
 function resetData() {
-  // Firebaseのデータを初期状態にリセット
-  updateDoc(doc(db, "users", userId), { chips: 1000 }); // 1000マコにリセット
+  return updateDoc(doc(db, "users", userId), { chips: 1000 });
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -114,6 +148,7 @@ onAuthStateChanged(auth, async (user) => {
     const userDoc = await getDoc(doc(db, "users", userId));
     currentChips = userDoc.data().chips || 0;
     chipCountEl.textContent = `所持マコ: ${currentChips}マコ`;
+    showGrowthNotification(currentChips);
   } else {
     window.location.href = "login.html";
   }
@@ -127,14 +162,11 @@ startBtn.addEventListener("click", () => {
   }
 
   currentChips -= betAmount;
-  chipCountEl.textContent = `所持マコ: ${currentChips}マコ`; // 現在のチップ数を更新
+  chipCountEl.textContent = `所持マコ: ${currentChips}マコ`;
 
   deck = createDeck();
   playerHand = [deck.pop(), deck.pop()];
   dealerHand = [deck.pop(), deck.pop()];
-
-  displayCards(playerCards, playerHand);
-  displayCards(dealerCards, [dealerHand[0], { suit: '?', value: '?' }]);
 
   gameArea.style.display = 'block';
   hitBtn.disabled = false;
@@ -142,6 +174,10 @@ startBtn.addEventListener("click", () => {
   returnBtn.disabled = true;
   resultEl.textContent = '';
   winInfoEl.textContent = '';
+  growthMsgEl.textContent = '';
+
+  displayCards(playerCards, playerHand);
+  displayCards(dealerCards, dealerHand, true);
 });
 
 hitBtn.addEventListener("click", () => {
@@ -150,19 +186,18 @@ hitBtn.addEventListener("click", () => {
   const playerScore = getValue(playerHand);
 
   if (playerScore > 21) {
-    endGame("バースト！負けました。", -betAmount); // バーストの場合、チップを減らす
+    endGame("バースト！負けました。", -betAmount);
   }
 });
 
 standBtn.addEventListener("click", () => {
-  displayCards(dealerCards, dealerHand);
   while (getValue(dealerHand) < 17) {
     dealerHand.push(deck.pop());
-    displayCards(dealerCards, dealerHand);
   }
-  checkWinner(); // 勝敗をチェック
+  displayCards(dealerCards, dealerHand, true);
+  checkWinner();
 });
 
 returnBtn.addEventListener("click", () => {
-  window.location.href = "育成.html"; // 戻るボタンで育成画面に移動
+  window.location.href = "育成.html";
 });
