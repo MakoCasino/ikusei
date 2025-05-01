@@ -145,12 +145,25 @@ function resetData() {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     userId = user.uid;
-    const userDoc = await getDoc(doc(db, "users", userId));
-    currentChips = userDoc.data().chips || 1000; // 初期所持マコを1000に設定
-    chipCountEl.textContent = `所持マコ: ${currentChips}マコ`;
-    showGrowthNotification(currentChips);
+    try {
+      const userDoc = await getDoc(doc(db, "users", userId));
+
+      // チップ数が取得できなかった場合
+      if (!userDoc.exists()) {
+        throw new Error("ユーザーデータが存在しません。");
+      }
+
+      currentChips = userDoc.data().chips || 1000; // 初期所持マコを1000に設定
+      chipCountEl.textContent = `所持マコ: ${currentChips}マコ`;
+      showGrowthNotification(currentChips);
+    } catch (error) {
+      // エラーハンドリング
+      console.error("ユーザーデータの取得に失敗しました:", error);
+      alert("ユーザー情報の取得に失敗しました。再度ログインしてください。");
+      window.location.href = "login.html"; // ログイン画面にリダイレクト
+    }
   } else {
-    window.location.href = "login.html";
+    window.location.href = "login.html"; // ログインしていない場合はログイン画面にリダイレクト
   }
 });
 
