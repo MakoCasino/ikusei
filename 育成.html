@@ -6,13 +6,37 @@
   <title>育成画面 - まこと育成ゲーム</title>
   <script type="module" src="育成.js"></script>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .hint-text {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+      margin-top: 1rem;
+    }
+  </style>
 </head>
 <body>
+  <audio id="legend-audio" src="saranhemakoto.mp3"></audio>
+
   <div class="container">
     <div id="chip-display" class="chip">所持マコ: 0マコ</div>
     <h2 id="makoto-status">状態: 未取得</h2>
     <img id="makoto-image" src="images/makoto0.png" alt="まこと" class="makoto-img" />
     <button onclick="goToBlackjack()">ブラックジャックに行く</button>
+    <div class="hint-text">まことをタップすると伝説の音楽が聴けます</div>
   </div>
+
+  <script>
+    let audioPlayed = false;
+    document.body.addEventListener("click", () => {
+      if (!audioPlayed) {
+        const audio = document.getElementById("legend-audio");
+        audio.play().catch(e => {
+          console.log("音楽の再生に失敗しました：", e);
+        });
+        audioPlayed = true;
+      }
+    });
+  </script>
 </body>
 </html>
