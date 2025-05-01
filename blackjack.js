@@ -1,4 +1,4 @@
-// ...（既存のimportはそのまま）
+// 既存のimportはそのまま
 
 let userId, currentChips = 0, betAmount = 1;
 let deck = [], playerHand = [], dealerHand = [];
@@ -146,7 +146,7 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     userId = user.uid;
     const userDoc = await getDoc(doc(db, "users", userId));
-    currentChips = userDoc.data().chips || 0;
+    currentChips = userDoc.data().chips || 1000; // 初期所持マコを1000に設定
     chipCountEl.textContent = `所持マコ: ${currentChips}マコ`;
     showGrowthNotification(currentChips);
   } else {
