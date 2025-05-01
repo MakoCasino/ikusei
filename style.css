@@ -55,9 +55,17 @@ a:hover {
   margin-top: 0.5rem;
 }
 
-.makoto-image {
+.makoto-img {
   width: 100%;
-  max-width: 400px;
+  max-width: 500px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.responsive-img {
+  width: 100%;
+  max-width: 600px;
   height: auto;
   display: block;
   margin: 0 auto;
